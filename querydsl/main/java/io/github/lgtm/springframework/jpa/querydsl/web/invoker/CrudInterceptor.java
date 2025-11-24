@@ -59,14 +59,14 @@ public class CrudInterceptor
     @Override
     public void delete(Object id, EntityInformation entityInformation) {
         EntityManager entityManager = getEntityManager();
-        Object entity = entityManager.find(entityInformation.entityClass(), id);
+        Object entity = entityManager.find(entityInformation.getEntityClass(), id);
         entityManager.remove(entity);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Object findById(Object id, EntityInformation entityInformation) {
-        return getEntityManager().find(entityInformation.entityClass(), id);
+        return getEntityManager().find(entityInformation.getEntityClass(), id);
     }
 
     protected JPQLQueryFactory getQueryFactory() {
@@ -85,17 +85,17 @@ public class CrudInterceptor
         JPQLQueryFactory factory = getQueryFactory();
         Fetchable<?> fetchable =
                 factory
-                        .selectFrom(entityInformation.entityPath())
+                        .selectFrom(entityInformation.getEntityPath())
                         .where(predicate);
         long count = fetchable.fetchCount();
         List<?> content = List.of();
         if (count != 0) {
 
             content = factory
-                    .selectFrom(entityInformation.entityPath())
+                    .selectFrom(entityInformation.getEntityPath())
                     .where(predicate)
                     .orderBy(
-                            PageableHelper.orders(pageable, entityInformation.entityPath())
+                            PageableHelper.orders(pageable, entityInformation.getEntityPath())
                                     .toArray(OrderSpecifier<?>[]::new)).limit(pageable.getPageSize()).offset(pageable.getOffset()).fetch();
 
         }
@@ -113,7 +113,7 @@ public class CrudInterceptor
             HttpServletRequest request,
             EntityInformation entityInformation) {
         JPQLQueryFactory factory = getQueryFactory();
-        return factory.selectFrom(entityInformation.entityPath()).where(predicate).fetch();
+        return factory.selectFrom(entityInformation.getEntityPath()).where(predicate).fetch();
     }
 
     @Override
