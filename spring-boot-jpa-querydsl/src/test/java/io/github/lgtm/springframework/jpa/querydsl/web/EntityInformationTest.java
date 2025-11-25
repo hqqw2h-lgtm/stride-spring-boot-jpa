@@ -1,0 +1,52 @@
+package io.github.lgtm.springframework.jpa.querydsl.web;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import io.github.lgtm.springframework.jpa.querydsl.web.entity.OrderEntity;
+import io.github.lgtm.springframework.jpa.querydsl.web.entity.QOrderEntity;
+import io.github.lgtm.springframework.jpa.querydsl.web.entity.QUserEntity;
+import io.github.lgtm.springframework.jpa.querydsl.web.entity.UserEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.Metamodel;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+/**
+ * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ */
+@SpringBootTest
+@ActiveProfiles("test")
+class EntityInformationTest {
+  @PersistenceContext private EntityManager em;
+
+  @Test
+  void getSingleIdColumnName() {
+    Metamodel metamodel = em.getMetamodel();
+    EntityType<UserEntity> entityType = metamodel.entity(UserEntity.class);
+
+    QUserEntity qUser = QUserEntity.userEntity;
+
+    EntityInformation info = new EntityInformation(qUser, entityType);
+
+    String[] idColumns = info.getIdColumnNames();
+
+    assertThat(idColumns).containsExactly("id");
+  }
+
+  @Test
+  void getIdClassAttributes() {
+    Metamodel metamodel = em.getMetamodel();
+    EntityType<OrderEntity> entityType = metamodel.entity(OrderEntity.class);
+
+    QOrderEntity qOrderEntity = QOrderEntity.orderEntity;
+
+    EntityInformation info = new EntityInformation(qOrderEntity, entityType);
+
+    String[] idColumns = info.getIdColumnNames();
+
+    assertThat(idColumns).containsExactly("id");
+  }
+}

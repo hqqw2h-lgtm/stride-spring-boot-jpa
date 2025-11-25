@@ -13,7 +13,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>querydsl</module>
+        <module>spring-boot-jpa-querydsl</module>
     </modules>
 
     <properties>
@@ -28,7 +28,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <classgraph.version>4.8.184</classgraph.version>
-
+        <junit.version>6.0.1</junit.version>
     </properties>
 
     <dependencyManagement>
@@ -49,6 +49,19 @@
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
                 <version>${classgraph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
