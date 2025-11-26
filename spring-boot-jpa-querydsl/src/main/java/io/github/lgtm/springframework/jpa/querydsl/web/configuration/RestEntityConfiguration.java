@@ -21,7 +21,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ * @author <a href="hqq.w2h@gmail.com">Weiwei Han</a>
  */
 @Configuration
 public class RestEntityConfiguration implements BeanFactoryAware {

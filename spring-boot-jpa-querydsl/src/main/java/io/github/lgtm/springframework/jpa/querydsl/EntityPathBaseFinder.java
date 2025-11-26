@@ -5,7 +5,7 @@ import jakarta.persistence.metamodel.EntityType;
 import java.util.Optional;
 
 /**
- * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
 public interface EntityPathBaseFinder {
   Optional<EntityPathBase<?>> find(EntityType<?> entityType) throws Exception;

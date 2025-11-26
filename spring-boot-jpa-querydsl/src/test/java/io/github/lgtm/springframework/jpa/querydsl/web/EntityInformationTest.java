@@ -15,7 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
 @SpringBootTest
 @ActiveProfiles("test")

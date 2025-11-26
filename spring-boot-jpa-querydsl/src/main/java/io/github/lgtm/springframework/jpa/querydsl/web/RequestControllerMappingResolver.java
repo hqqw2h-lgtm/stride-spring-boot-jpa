@@ -22,7 +22,7 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
 public class RequestControllerMappingResolver implements RequestMappingResolver, BeanFactoryAware {
   private final RestControllerBeanFactory restControllerBeanFactory;

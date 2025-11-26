@@ -8,7 +8,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.lang.NonNull;
 
 /**
- * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
 public abstract class AbstractRestControllerBeanFactory
     implements RestControllerBeanFactory, BeanFactoryAware {

@@ -26,7 +26,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * @author <a href="mailto:weiwei.han2@cn.bosch.com">Weiwei Han</a>
+ * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
 public class ByteBuddyRestControllerBeanFactory extends AbstractRestControllerBeanFactory
     implements BeanClassLoaderAware {
