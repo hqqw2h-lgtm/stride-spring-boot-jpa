@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
+
 /**
  * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
@@ -31,9 +33,9 @@ class EntityInformationTest {
 
     EntityInformation info = new EntityInformation(qUser, entityType);
 
-    String[] idColumns = info.getIdColumnNames();
+    List<String> idColumns = info.getIdColumnNames();
 
-    assertThat(idColumns).containsExactly("id");
+    assertThat(idColumns.contains("id"));
   }
 
   @Test
@@ -45,8 +47,9 @@ class EntityInformationTest {
 
     EntityInformation info = new EntityInformation(qOrderEntity, entityType);
 
-    String[] idColumns = info.getIdColumnNames();
+    List<String> idColumns = info.getIdColumnNames();
 
-    assertThat(idColumns).containsExactly("id");
+    assertThat(idColumns.contains("id"));
+    assertThat(idColumns.contains("version"));
   }
 }

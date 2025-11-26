@@ -1,6 +1,5 @@
 package io.github.lgtm.springframework.jpa.querydsl.web.invoker;
 
-
 import com.querydsl.core.Fetchable;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
@@ -27,7 +26,7 @@ import org.springframework.util.MultiValueMap;
  */
 @Transactional
 public class CrudInterceptor
-        implements BeanFactoryAware,
+    implements BeanFactoryAware,
         CreateInvoker,
         ListInvoker,
         DeleteInvoker,
@@ -35,57 +34,60 @@ public class CrudInterceptor
         PageListInvoker,
         UpdateInvoker {
 
-    private BeanFactory beanFactory;
+  private BeanFactory beanFactory;
 
-    @Override
-    @Transactional(readOnly = true)
-    public Object create(Object entity, EntityInformation entityInformation) {
-        getEntityManager().persist(entity);
-        return entity;
-    }
+  @Override
+  @Transactional()
+  public Object create(Object entity, EntityInformation entityInformation) {
+    getEntityManager().persist(entity);
+    return entity;
+  }
 
-    @Override
-    public Object update(Object entity, EntityInformation entityInformation) {
-        getEntityManager().persist(entity);
-        return entity;
-    }
+  @Override
+  public Object update(Object entity, EntityInformation entityInformation) {
+    getEntityManager().persist(entity);
+    return entity;
+  }
 
-    protected EntityManager getEntityManager() {
-        return beanFactory.getBean(EntityManager.class);
-    }
+  protected EntityManager getEntityManager() {
+    return beanFactory.getBean(EntityManager.class);
+  }
 
-    @Override
-    public void delete(Object id, EntityInformation entityInformation) {
-        EntityManager entityManager = getEntityManager();
+  @Override
+  public void delete(Object id, EntityInformation entityInformation) {
+    EntityManager entityManager = getEntityManager();
     Object entity = entityManager.find(entityInformation.getEntityPath().getJavaType(), id);
-        entityManager.remove(entity);
+    if (entity == null) {
+      return;
     }
+    entityManager.remove(entity);
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Object findById(Object id, EntityInformation entityInformation) {
+  @Override
+  @Transactional(readOnly = true)
+  public Object findById(Object id, EntityInformation entityInformation) {
     return getEntityManager().find(entityInformation.getEntityPath().getJavaType(), id);
-    }
+  }
 
-    protected JPQLQueryFactory getQueryFactory() {
-        return beanFactory.getBean(JPQLQueryFactory.class);
-    }
+  protected JPQLQueryFactory getQueryFactory() {
+    return beanFactory.getBean(JPQLQueryFactory.class);
+  }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<?> pageList(
-            Pageable pageable,
-            Predicate predicate,
-            MultiValueMap<String, String> valueMap,
-            HttpHeaders headers,
-            HttpServletRequest request,
-            EntityInformation entityInformation) {
-        JPQLQueryFactory factory = getQueryFactory();
+  @Override
+  @Transactional(readOnly = true)
+  public Page<?> pageList(
+      Pageable pageable,
+      Predicate predicate,
+      MultiValueMap<String, String> valueMap,
+      HttpHeaders headers,
+      HttpServletRequest request,
+      EntityInformation entityInformation) {
+    JPQLQueryFactory factory = getQueryFactory();
     Fetchable<?> fetchable =
         factory.selectFrom(entityInformation.getEntityClass()).where(predicate);
-        long count = fetchable.fetchCount();
-        List<?> content = List.of();
-        if (count != 0) {
+    long count = fetchable.fetchCount();
+    List<?> content = List.of();
+    if (count != 0) {
 
       content =
           factory
@@ -97,26 +99,25 @@ public class CrudInterceptor
               .limit(pageable.getPageSize())
               .offset(pageable.getOffset())
               .fetch();
-        }
-
-
-        return new PageImpl<>(content, pageable, count);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Collection<?> list(
-            Predicate predicate,
-            MultiValueMap<String, String> valueMap,
-            HttpHeaders headers,
-            HttpServletRequest request,
-            EntityInformation entityInformation) {
-        JPQLQueryFactory factory = getQueryFactory();
+    return new PageImpl<>(content, pageable, count);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Collection<?> list(
+      Predicate predicate,
+      MultiValueMap<String, String> valueMap,
+      HttpHeaders headers,
+      HttpServletRequest request,
+      EntityInformation entityInformation) {
+    JPQLQueryFactory factory = getQueryFactory();
     return factory.selectFrom(entityInformation.getEntityClass()).where(predicate).fetch();
-    }
+  }
 
-    @Override
-    public void setBeanFactory(@NonNull BeanFactory beanFactory) throws BeansException {
-        this.beanFactory = beanFactory;
-    }
+  @Override
+  public void setBeanFactory(@NonNull BeanFactory beanFactory) throws BeansException {
+    this.beanFactory = beanFactory;
+  }
 }

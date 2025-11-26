@@ -5,10 +5,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
+@EnableJpaRepositories
 @SpringBootApplication()
 @EntityScan(basePackages = "io.github.lgtm.springframework.jpa")
 @EnableAutoEntityController()

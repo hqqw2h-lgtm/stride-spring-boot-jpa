@@ -15,8 +15,6 @@ import lombok.Setter;
 public class OrderEntity {
 
   @EmbeddedId
-  @GeneratedValue(generator = "id-generator", strategy = GenerationType.SEQUENCE)
-  @SequenceGenerator(name = "id-generator", sequenceName = "seq_id-generator")
   private OrderId id;
 
   private String desc;

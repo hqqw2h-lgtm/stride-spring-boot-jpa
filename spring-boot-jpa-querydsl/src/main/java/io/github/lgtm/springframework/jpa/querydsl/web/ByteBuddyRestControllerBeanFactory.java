@@ -7,12 +7,17 @@ import io.github.lgtm.springframework.jpa.querydsl.web.customizer.DefaultsQueryd
 import io.github.lgtm.springframework.jpa.querydsl.web.invoker.InvokerHandlerFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.annotation.AnnotationDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
+import net.bytebuddy.implementation.bind.annotation.*;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.data.domain.Pageable;
@@ -61,15 +66,14 @@ public class ByteBuddyRestControllerBeanFactory extends AbstractRestControllerBe
   @SuppressWarnings("unchecked")
   protected DynamicType.Builder<ActionDispatcherController<?, ?>> entityControllerBuilder(
       EntityInformation entityInformation, RestControllerEntity restControllerEntity) {
-
-    String controllerClassName = getClassName(entityInformation, restControllerEntity);
+     String controllerClassName = getClassName(entityInformation, restControllerEntity);
     return (DynamicType.Builder<ActionDispatcherController<?, ?>>)
         new ByteBuddy()
             .subclass(
                 TypeDescription.Generic.Builder.parameterizedType(
                         ActionDispatcherController.class,
                         entityInformation.getEntityPath().getJavaType(),
-                        entityInformation.getEntityPath().getIdType().getJavaType())
+                        entityInformation.getIdClass())
                     .build())
             .name(controllerClassName)
             .annotateType(AnnotationDescription.Builder.ofType(RestController.class).build())
@@ -164,17 +168,78 @@ public class ByteBuddyRestControllerBeanFactory extends AbstractRestControllerBe
         Action.DELETE, entityInformation.getEntityPath().getJavaType(), restControllerEntity)) {
       return builder;
     }
+    return DeleteInterceptor.createDeleteMethod(builder, entityInformation, restControllerEntity);
+  }
 
-    return builder
-        .method(ElementMatchers.named("delete").and(ElementMatchers.takesArguments(1)))
-        .intercept(SuperMethodCall.INSTANCE)
-        .annotateMethod(
-            AnnotationDescription.Builder.ofType(DeleteMapping.class)
-                .defineArray("path", "/{id}")
-                .build())
-        .annotateParameter(
-            0,
-            AnnotationDescription.Builder.ofType(PathVariable.class).define("name", "id").build());
+  static String[] createPathVariables(EntityInformation entityInformation) {
+    return new String[] {
+      entityInformation.getIdColumnNames().stream()
+          .map(v -> "{" + v + "}")
+          .collect(Collectors.joining("/"))
+    };
+  }
+
+  public static class DeleteInterceptor {
+
+    public static DynamicType.Builder<ActionDispatcherController<?, ?>> createDeleteMethod(
+        DynamicType.Builder<ActionDispatcherController<?, ?>> builder,
+        EntityInformation entityInformation,
+        RestControllerEntity restControllerEntity) {
+
+      return builder
+          .defineMethod("_delete", void.class, java.lang.reflect.Modifier.PUBLIC)
+          .withParameters(
+              TypeDescription.Generic.Builder.parameterizedType(
+                      Map.class, String.class, String.class)
+                  .build())
+          .intercept(MethodDelegation.to(DeleteInterceptor.class))
+          .annotateParameter(0, AnnotationDescription.Builder.ofType(PathVariable.class).build())
+          .annotateMethod(
+              AnnotationDescription.Builder.ofType(DeleteMapping.class)
+                  .defineArray("path", createPathVariables(entityInformation))
+                  .build());
+    }
+
+    @RuntimeType
+    @SuppressWarnings("unchecked")
+    public static void _delete(@This Object proxy, @Argument(0) Map<String, String> paths) {
+      ActionDispatcherController<Object, Object> instance =
+          (ActionDispatcherController<Object, Object>) proxy;
+      EntityInformation entityInformation = instance.getEntityInformation();
+      Object object = entityInformation.bindIdValueWithAccessor(paths, instance.getBeanFactory());
+      instance.delete(object);
+    }
+  }
+
+  public static class FindByIdInterceptor {
+
+    public static DynamicType.Builder<ActionDispatcherController<?, ?>> createFindByIdMethod(
+        DynamicType.Builder<ActionDispatcherController<?, ?>> builder,
+        EntityInformation entityInformation,
+        RestControllerEntity restControllerEntity) {
+      return builder
+          .defineMethod("_findById", Object.class, java.lang.reflect.Modifier.PUBLIC)
+          .withParameters(
+              TypeDescription.Generic.Builder.parameterizedType(
+                      Map.class, String.class, String.class)
+                  .build())
+          .intercept(MethodDelegation.to(FindByIdInterceptor.class))
+          .annotateParameter(0, AnnotationDescription.Builder.ofType(PathVariable.class).build())
+          .annotateMethod(
+              AnnotationDescription.Builder.ofType(GetMapping.class)
+                  .defineArray("path", createPathVariables(entityInformation))
+                  .build());
+    }
+
+    @RuntimeType
+    @SuppressWarnings("unchecked")
+    public static Object _findById(@This Object proxy, @Argument(0) Map<String, String> paths) {
+      ActionDispatcherController<Object, Object> instance =
+          (ActionDispatcherController<Object, Object>) proxy;
+      EntityInformation entityInformation = instance.getEntityInformation();
+      Object object = entityInformation.bindIdValueWithAccessor(paths, instance.getBeanFactory());
+      return instance.findById(object);
+    }
   }
 
   private DynamicType.Builder<ActionDispatcherController<?, ?>> configureFindByIdMethod(
@@ -186,16 +251,8 @@ public class ByteBuddyRestControllerBeanFactory extends AbstractRestControllerBe
       return builder;
     }
 
-    return builder
-        .method(ElementMatchers.named("findById").and(ElementMatchers.takesArguments(1)))
-        .intercept(SuperMethodCall.INSTANCE)
-        .annotateMethod(
-            AnnotationDescription.Builder.ofType(GetMapping.class)
-                .defineArray("path", "/{id}")
-                .build())
-        .annotateParameter(
-            0,
-            AnnotationDescription.Builder.ofType(PathVariable.class).define("name", "id").build());
+    return FindByIdInterceptor.createFindByIdMethod(
+        builder, entityInformation, restControllerEntity);
   }
 
   private DynamicType.Builder<ActionDispatcherController<?, ?>> configurePageListMethod(
@@ -225,7 +282,7 @@ public class ByteBuddyRestControllerBeanFactory extends AbstractRestControllerBe
         .annotateParameter(
             0,
             AnnotationDescription.Builder.ofType(SortDefault.class)
-                .defineArray("sort", entityInformation.getIdColumnNames())
+                .defineArray("sort", entityInformation.getIdColumnNames().toArray(String[]::new))
                 .define("direction", Sort.Direction.ASC)
                 .build())
         .annotateParameter(

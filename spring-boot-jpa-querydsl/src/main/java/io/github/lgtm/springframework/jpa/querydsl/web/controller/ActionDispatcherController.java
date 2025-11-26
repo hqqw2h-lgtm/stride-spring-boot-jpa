@@ -1,6 +1,5 @@
 package io.github.lgtm.springframework.jpa.querydsl.web.controller;
 
-
 import com.querydsl.core.types.Predicate;
 import io.github.lgtm.springframework.jpa.querydsl.web.Action;
 import io.github.lgtm.springframework.jpa.querydsl.web.EntityInformation;
@@ -8,9 +7,15 @@ import io.github.lgtm.springframework.jpa.querydsl.web.EntityInformationAware;
 import io.github.lgtm.springframework.jpa.querydsl.web.invoker.*;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collection;
+
+import lombok.Getter;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 
@@ -20,10 +25,10 @@ import org.springframework.util.MultiValueMap;
 @SuppressWarnings("unchecked")
 @Transactional
 public class ActionDispatcherController<ENTITY, ID>
-    implements EntityInformationAware, EntityControllerTemplate<ENTITY, ID> {
+    implements EntityInformationAware, EntityControllerTemplate<ENTITY, ID>, BeanFactoryAware {
   private final InvokerHandlerFactory factory;
   private final EntityInformation entityInformation;
-
+  @Getter private BeanFactory beanFactory;
 
   public ActionDispatcherController(
       InvokerHandlerFactory factory, EntityInformation entityInformation) {
@@ -105,5 +110,10 @@ public class ActionDispatcherController<ENTITY, ID>
   @Override
   public EntityInformation getEntityInformation() {
     return entityInformation;
+  }
+
+  @Override
+  public void setBeanFactory(@NonNull BeanFactory beanFactory) throws BeansException {
+    this.beanFactory = beanFactory;
   }
 }

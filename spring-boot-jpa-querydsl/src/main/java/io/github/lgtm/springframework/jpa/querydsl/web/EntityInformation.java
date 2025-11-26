@@ -1,15 +1,24 @@
 package io.github.lgtm.springframework.jpa.querydsl.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.EntityPathBase;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.metamodel.*;
 
 import java.util.*;
 
 import lombok.Getter;
+import org.springframework.beans.*;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+import org.springframework.validation.DataBinder;
+import org.springframework.web.bind.WebDataBinder;
 
 /**
  * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
@@ -27,11 +36,12 @@ public class EntityInformation {
   private List<String> getEmbeddablePaths(EmbeddableType<?> embeddable, String parent) {
     List<String> paths = new ArrayList<>();
     for (Attribute<?, ?> attr : embeddable.getAttributes()) {
+      String root = StringUtils.hasText(parent) ? parent + "." + attr.getName() : attr.getName();
       if (attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
         EmbeddableType<?> nested = (EmbeddableType<?>) ((SingularAttribute<?, ?>) attr).getType();
-        paths.addAll(getEmbeddablePaths(nested, parent + "." + attr.getName()));
+        paths.addAll(getEmbeddablePaths(nested, root));
       } else {
-        paths.add(parent + "." + attr.getName());
+        paths.add(root);
       }
     }
     return paths;
@@ -39,10 +49,9 @@ public class EntityInformation {
 
   protected List<String> getSingleIdColumnName() {
     if (entityPath.getIdType() instanceof EmbeddableType<?>) {
-      /*  return getEmbeddablePaths(
-      (EmbeddableType<?>) entityPath.getIdType(),
-      entityPath.getId(entityPath.getIdType().getJavaType()).getName());*/
-      throw new UnsupportedOperationException("Embeddable id is not supported yet.");
+      return getEmbeddablePaths(
+          (EmbeddableType<?>) entityPath.getIdType(),
+          entityPath.getId(entityPath.getIdType().getJavaType()).getName());
     } else {
       SingularAttribute<?, ?> idAttr = entityPath.getId(entityPath.getIdType().getJavaType());
       return List.of(idAttr.getName());
@@ -58,27 +67,67 @@ public class EntityInformation {
   }
 
   @SuppressWarnings("unchecked,rawtypes")
-  public String[] getIdColumnNames() {
+  public List<String> getIdColumnNames() {
     List<String> idColumnNames = new java.util.ArrayList<>();
 
     if (entityPath.hasSingleIdAttribute()) {
-
-      idColumnNames.addAll(getSingleIdColumnName());
-
+      if (entityPath.getIdType().getPersistenceType() == Type.PersistenceType.BASIC) {
+        idColumnNames.add(entityPath.getId(entityPath.getIdType().getJavaType()).getName());
+      } else if (entityPath.getIdType().getPersistenceType() == Type.PersistenceType.EMBEDDABLE) {
+        // embedded id
+        idColumnNames.addAll(getEmbeddablePaths((EmbeddableType<?>) entityPath.getIdType(), ""));
+      }
     } else {
       Set<SingularAttribute<?, ?>> singularAttributes =
-          getIdClassAttributes((IdentifiableType) entityPath.getIdType());
-      singularAttributes.stream().map(Attribute::getName).forEach(idColumnNames::add);
+          (Set<SingularAttribute<?, ?>>) entityPath.getIdClassAttributes();
+      singularAttributes.forEach(
+          singularAttribute -> {
+            if (singularAttribute.isId()) {
+              idColumnNames.add(singularAttribute.getName());
+            }
+          });
     }
-
-    return idColumnNames.toArray(new String[0]);
+    return idColumnNames.stream().sorted(Comparator.naturalOrder()).toList();
   }
 
-  protected Object bindIdValueWithAccessor(Map<String, String> ids) {
-    Class<?> idClass = entityPath.getIdType().getJavaType();
-    Binder binder = new Binder(new MapConfigurationPropertySource(ids));
-    BindResult<?> result = binder.bind("", Bindable.of(idClass));
-    return result.orElseThrow(
-        () -> new IllegalArgumentException("Cannot bind id values to " + idClass.getName()));
+  protected Object bindIdValueWithAccessor(Map<String, String> ids, BeanFactory beanFactory) {
+
+    Class<?> idClass = getIdClass();
+    if (entityPath.hasSingleIdAttribute()
+        && entityPath.getIdType().getPersistenceType() == Type.PersistenceType.BASIC) {
+      Assert.isTrue(ids.size() == 1, "Cannot bind id values to " + idClass.getName());
+      String raw = ids.values().iterator().next();
+      ConversionService cs = beanFactory.getBean(ConversionService.class);
+      return cs.convert(raw, idClass);
+    } else {
+      // @IdClass  @EmbeddedId
+      Object target = BeanUtils.instantiateClass(idClass);
+      DataBinder binder = new DataBinder(target);
+      binder.setAutoGrowNestedPaths(true);
+      binder.setIgnoreUnknownFields(false);
+      binder.setConversionService(beanFactory.getBean(ConversionService.class));
+      binder.bind(new MutablePropertyValues(ids));
+      if (binder.getBindingResult().hasErrors()) {
+        throw new IllegalArgumentException("Cannot bind id values to " + idClass.getName());
+      }
+      return target;
+    }
+  }
+
+  public Class<?> getIdClass() {
+    if (entityPath.hasSingleIdAttribute()) {
+      return entityPath.getIdType().getJavaType();
+    } else {
+      Class<?> target = entityPath.getJavaType();
+      while (target != null && target != Object.class) {
+        IdClass idClassAnnotation = target.getAnnotation(IdClass.class);
+        if (idClassAnnotation != null) {
+          return idClassAnnotation.value();
+        }
+        target = target.getSuperclass();
+      }
+    }
+    throw new IllegalStateException(
+        "Cannot determinate the id class for entity " + entityPath.getJavaType().getName());
   }
 }
