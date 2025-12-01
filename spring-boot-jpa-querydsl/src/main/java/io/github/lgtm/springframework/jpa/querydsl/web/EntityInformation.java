@@ -1,24 +1,16 @@
 package io.github.lgtm.springframework.jpa.querydsl.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.EntityPathBase;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.metamodel.*;
-
 import java.util.*;
-
 import lombok.Getter;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.boot.context.properties.bind.BindResult;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.DataBinder;
-import org.springframework.web.bind.WebDataBinder;
 
 /**
  * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
@@ -66,7 +58,7 @@ public class EntityInformation {
     }
   }
 
-  @SuppressWarnings("unchecked,rawtypes")
+  @SuppressWarnings("unchecked")
   public List<String> getIdColumnNames() {
     List<String> idColumnNames = new java.util.ArrayList<>();
 
@@ -90,7 +82,7 @@ public class EntityInformation {
     return idColumnNames.stream().sorted(Comparator.naturalOrder()).toList();
   }
 
-  protected Object bindIdValueWithAccessor(Map<String, String> ids, BeanFactory beanFactory) {
+  public Object bindIdValueWithAccessor(Map<String, String> ids, BeanFactory beanFactory) {
 
     Class<?> idClass = getIdClass();
     if (entityPath.hasSingleIdAttribute()

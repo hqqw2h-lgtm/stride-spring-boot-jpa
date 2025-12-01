@@ -4,10 +4,13 @@ import com.querydsl.core.Fetchable;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.JPQLQueryFactory;
+import io.github.lgtm.springframework.jpa.querydsl.web.Action;
 import io.github.lgtm.springframework.jpa.querydsl.web.EntityInformation;
+import io.github.lgtm.springframework.jpa.querydsl.web.annotation.EntityArgument;
+import io.github.lgtm.springframework.jpa.querydsl.web.annotation.IdArgument;
+import io.github.lgtm.springframework.jpa.querydsl.web.annotation.InvokerDelegate;
 import io.github.lgtm.springframework.jpa.querydsl.web.helper.PageableHelper;
 import jakarta.persistence.EntityManager;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.beans.BeansException;
@@ -16,35 +19,26 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.MultiValueMap;
 
 /**
  * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
 @Transactional
-public class CrudInterceptor
-    implements BeanFactoryAware,
-        CreateInvoker,
-        ListInvoker,
-        DeleteInvoker,
-        FindByIdInvoker,
-        PageListInvoker,
-        UpdateInvoker {
+public class DefaultDelegator implements BeanFactoryAware {
 
   private BeanFactory beanFactory;
 
-  @Override
   @Transactional()
-  public Object create(Object entity, EntityInformation entityInformation) {
+  @InvokerDelegate(action = Action.CREATE, entity = InvokerDelegate._DEFAULT.class)
+  public Object create(@EntityArgument Object entity, EntityInformation entityInformation) {
     getEntityManager().persist(entity);
     return entity;
   }
 
-  @Override
-  public Object update(Object entity, EntityInformation entityInformation) {
+  @InvokerDelegate(action = Action.UPDATE, entity = InvokerDelegate._DEFAULT.class)
+  public Object update(@EntityArgument Object entity, EntityInformation entityInformation) {
     getEntityManager().persist(entity);
     return entity;
   }
@@ -53,8 +47,8 @@ public class CrudInterceptor
     return beanFactory.getBean(EntityManager.class);
   }
 
-  @Override
-  public void delete(Object id, EntityInformation entityInformation) {
+  @InvokerDelegate(action = Action.DELETE, entity = InvokerDelegate._DEFAULT.class)
+  public void delete(@IdArgument Object id, EntityInformation entityInformation) {
     EntityManager entityManager = getEntityManager();
     Object entity = entityManager.find(entityInformation.getEntityPath().getJavaType(), id);
     if (entity == null) {
@@ -63,9 +57,9 @@ public class CrudInterceptor
     entityManager.remove(entity);
   }
 
-  @Override
   @Transactional(readOnly = true)
-  public Object findById(Object id, EntityInformation entityInformation) {
+  @InvokerDelegate(action = Action.FIND_BY_ID, entity = InvokerDelegate._DEFAULT.class)
+  public Object findById(@IdArgument Object id, EntityInformation entityInformation) {
     return getEntityManager().find(entityInformation.getEntityPath().getJavaType(), id);
   }
 
@@ -73,15 +67,10 @@ public class CrudInterceptor
     return beanFactory.getBean(JPQLQueryFactory.class);
   }
 
-  @Override
   @Transactional(readOnly = true)
+  @InvokerDelegate(action = Action.PAGE_LIST, entity = InvokerDelegate._DEFAULT.class)
   public Page<?> pageList(
-      Pageable pageable,
-      Predicate predicate,
-      MultiValueMap<String, String> valueMap,
-      HttpHeaders headers,
-      HttpServletRequest request,
-      EntityInformation entityInformation) {
+      Pageable pageable, Predicate predicate, EntityInformation entityInformation) {
     JPQLQueryFactory factory = getQueryFactory();
     Fetchable<?> fetchable =
         factory.selectFrom(entityInformation.getEntityClass()).where(predicate);
@@ -104,14 +93,9 @@ public class CrudInterceptor
     return new PageImpl<>(content, pageable, count);
   }
 
-  @Override
   @Transactional(readOnly = true)
-  public Collection<?> list(
-      Predicate predicate,
-      MultiValueMap<String, String> valueMap,
-      HttpHeaders headers,
-      HttpServletRequest request,
-      EntityInformation entityInformation) {
+  @InvokerDelegate(action = Action.LIST, entity = InvokerDelegate._DEFAULT.class)
+  public Collection<?> list(Predicate predicate, EntityInformation entityInformation) {
     JPQLQueryFactory factory = getQueryFactory();
     return factory.selectFrom(entityInformation.getEntityClass()).where(predicate).fetch();
   }

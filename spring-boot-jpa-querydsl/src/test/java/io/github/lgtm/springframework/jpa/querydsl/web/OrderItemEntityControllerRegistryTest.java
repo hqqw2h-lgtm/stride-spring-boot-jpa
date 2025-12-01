@@ -46,7 +46,7 @@ class OrderItemEntityControllerRegistryTest {
 
   @Test
   void testGetController() {
-    String url = "http://127.0.0.1:" + port + "/OrderItem/1/12";
+    String url = "http://127.0.0.1:" + port + "/OrderItem/ids?orderId=12&itemId=1";
     ResponseEntity<OrderItem> response = restTemplate.getForEntity(url, OrderItem.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
@@ -66,8 +66,9 @@ class OrderItemEntityControllerRegistryTest {
 
   @Test
   void testDeleteController() {
-    String url = "http://127.0.0.1:" + port + "/OrderItem/1/12";
+    String url = "http://127.0.0.1:" + port + "/OrderItem?orderId=12&itemId=1";
     restTemplate.delete(url);
+    url = "http://127.0.0.1:" + port + "/OrderItem/ids?orderId=12&itemId=1";
 
     ResponseEntity<OrderItem> response = restTemplate.getForEntity(url, OrderItem.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());

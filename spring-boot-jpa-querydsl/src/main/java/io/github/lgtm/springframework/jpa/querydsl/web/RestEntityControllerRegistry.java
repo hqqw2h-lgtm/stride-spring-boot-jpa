@@ -8,21 +8,19 @@ import java.util.Optional;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.lang.NonNull;
 
 /**
  * @author <a href="mailto:hqq.w2h@gmail.com">Weiwei Han</a>
  */
-public class RestEntityControllerRegistry implements BeanFactoryAware, SmartInitializingSingleton {
-  private final EntityManagerFactory entityManagerFactory;
+public class RestEntityControllerRegistry implements BeanFactoryAware {
   private final EntityPathBaseFinder entityPathBaseFinder;
   private ConfigurableListableBeanFactory factory;
 
-  public RestEntityControllerRegistry(
-      EntityManagerFactory entityManagerFactory, EntityPathBaseFinder entityPathBaseFinder) {
-    this.entityManagerFactory = entityManagerFactory;
+  public RestEntityControllerRegistry(EntityPathBaseFinder entityPathBaseFinder) {
     this.entityPathBaseFinder = entityPathBaseFinder;
   }
 
@@ -31,9 +29,10 @@ public class RestEntityControllerRegistry implements BeanFactoryAware, SmartInit
     this.factory = (ConfigurableListableBeanFactory) beanFactory;
   }
 
-  @Override
-  public void afterSingletonsInstantiated() {
-    entityManagerFactory
+  @EventListener(ApplicationReadyEvent.class)
+  public void onReady(ApplicationReadyEvent event) {
+    factory
+        .getBean(EntityManagerFactory.class)
         .getMetamodel()
         .getEntities()
         .forEach(

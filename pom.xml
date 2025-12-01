@@ -155,7 +155,6 @@
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>hqqw2h-lgtm</publishingServerId>
-                    <tokenAuth>true</tokenAuth>
                 </configuration>
             </plugin>
         </plugins>

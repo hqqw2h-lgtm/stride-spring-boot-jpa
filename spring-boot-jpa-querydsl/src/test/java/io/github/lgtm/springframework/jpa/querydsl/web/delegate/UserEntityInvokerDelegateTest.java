@@ -1,20 +1,18 @@
-package io.github.lgtm.springframework.jpa.querydsl.web;
+package io.github.lgtm.springframework.jpa.querydsl.web.delegate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lgtm.springframework.jpa.querydsl.web.entity.UserEntity;
 import io.github.lgtm.springframework.jpa.querydsl.web.entity.UserEntityRepository;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -23,11 +21,10 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class UserEntityControllerRegistryTest {
+class UserEntityInvokerDelegateTest {
   @LocalServerPort private int port;
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private UserEntityRepository userEntityRepository;
-  @Autowired private ObjectMapper objectMapper;
 
   @BeforeEach
   void before() {
@@ -50,37 +47,14 @@ class UserEntityControllerRegistryTest {
     ResponseEntity<UserEntity> response = restTemplate.getForEntity(url, UserEntity.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
+    assertEquals("delegate-invoker-user", response.getBody().getName());
   }
 
-  @Test
-  void testListController() {
-    String url = "http://127.0.0.1:" + port + "/UserEntity";
-
-    ResponseEntity<List<UserEntity>> listResponseEntity =
-        restTemplate.exchange(
-            url + "?name=test", HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
-    assertEquals(HttpStatus.OK, listResponseEntity.getStatusCode());
-    assertNotNull(listResponseEntity.getBody());
-    assertEquals(1, listResponseEntity.getBody().size());
-  }
-
-  @Test
-  void testDeleteController() {
-    String url = "http://127.0.0.1:" + port + "/UserEntity/1";
-    restTemplate.delete(url);
-
-    ResponseEntity<UserEntity> response = restTemplate.getForEntity(url, UserEntity.class);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNull(response.getBody());
-  }
-
-  @Test
-  void testPageController() {
-    String url = "http://127.0.0.1:" + port + "/UserEntity/page";
-    ResponseEntity<Map<String, Object>> pageResponseEntity =
-        restTemplate.exchange(
-            url + "?name=test", HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
-    assertEquals(HttpStatus.OK, pageResponseEntity.getStatusCode());
-    assertNotNull(pageResponseEntity.getBody());
+  @TestConfiguration
+  static class UserEntityDelegateConfiguration {
+    @Bean
+    public UserEntityInvokerDelegate userEntityDelegate() {
+      return new UserEntityInvokerDelegate();
+    }
   }
 }

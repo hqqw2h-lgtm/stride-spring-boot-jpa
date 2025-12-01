@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.lgtm.springframework.jpa.querydsl.web.entity.*;
-
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,7 @@ class OrderEntityControllerRegistryTest {
 
   @Test
   void testGetController() {
-    String url = "http://127.0.0.1:" + port + "/OrderEntity/1/2";
+    String url = "http://127.0.0.1:" + port + "/OrderEntity/ids?orderId=1&version=2";
     ResponseEntity<OrderEntity> response = restTemplate.getForEntity(url, OrderEntity.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
@@ -69,9 +68,9 @@ class OrderEntityControllerRegistryTest {
 
   @Test
   void testDeleteController() {
-    String url = "http://127.0.0.1:" + port + "/OrderEntity/1/2";
+    String url = "http://127.0.0.1:" + port + "/OrderEntity?orderId=1&version=2";
     restTemplate.delete(url);
-
+    url = "http://127.0.0.1:" + port + "/OrderEntity/ids?orderId=1&version=2";
     ResponseEntity<UserEntity> response = restTemplate.getForEntity(url, UserEntity.class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNull(response.getBody());

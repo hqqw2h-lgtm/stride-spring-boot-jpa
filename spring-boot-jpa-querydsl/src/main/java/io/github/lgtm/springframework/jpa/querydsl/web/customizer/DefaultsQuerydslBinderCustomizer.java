@@ -46,9 +46,9 @@ public class DefaultsQuerydslBinderCustomizer
    * @param root the root entity path
    * @return a set of user-defined property descriptors
    */
-  private static Set<PropertyDescriptor> getUserDefinedProperties(Path<?> root) {
+  private static Set<PropertyDescriptor> getUserDefinedProperties(BeanPath<?> root) {
     Set<PropertyDescriptor> propertyDescriptors = new HashSet<>();
-    Class<?> clz = ResolvableType.forInstance(root).getSuperType().getGeneric(0).getRawClass();
+    Class<?> clz = ResolvableType.forInstance(root).as(BeanPath.class).getGeneric(0).getRawClass();
     if (clz == null) {
       return propertyDescriptors;
     }
@@ -152,12 +152,12 @@ public class DefaultsQuerydslBinderCustomizer
     }
 
     if (root instanceof CollectionPathBase<?, ?, ?> collectionPathBase) {
-        SimpleExpression<?> expression = collectionPathBase.any();
+      SimpleExpression<?> expression = collectionPathBase.any();
       if (expression instanceof Path<?>) {
         doBind(querydslBindings, (Path<?>) expression, traces);
       }
     } else if (root instanceof BeanPath<?>) {
-      Set<PropertyDescriptor> propertyDescriptors = getUserDefinedProperties(root);
+      Set<PropertyDescriptor> propertyDescriptors = getUserDefinedProperties((BeanPath<?>) root);
       ReflectionUtils.doWithFields(
           root.getClass(),
           field -> {

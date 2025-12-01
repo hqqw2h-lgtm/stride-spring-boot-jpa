@@ -4,10 +4,9 @@ import com.querydsl.jpa.JPQLQueryFactory;
 import io.github.lgtm.springframework.jpa.querydsl.ClassPathScanningEntityIterator;
 import io.github.lgtm.springframework.jpa.querydsl.EntityPathBaseFinder;
 import io.github.lgtm.springframework.jpa.querydsl.web.*;
-import io.github.lgtm.springframework.jpa.querydsl.web.invoker.CrudInterceptor;
-import io.github.lgtm.springframework.jpa.querydsl.web.invoker.DefaultHandlerFactory;
-import io.github.lgtm.springframework.jpa.querydsl.web.invoker.InvokerHandlerFactory;
-import jakarta.persistence.EntityManagerFactory;
+import io.github.lgtm.springframework.jpa.querydsl.web.controller.ByteBuddyRestControllerFactory;
+import io.github.lgtm.springframework.jpa.querydsl.web.invoker.DefaultDelegator;
+import java.util.List;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -28,10 +27,21 @@ public class RestEntityConfiguration implements BeanFactoryAware {
   private BeanFactory beanFactory;
 
   @Bean
+  @Lazy
+  public DelegateRequestMappingInfoProvider delegateRequestMappingInfoProvider() {
+    return new DelegateRequestMappingInfoProvider();
+  }
+
+  @Bean
+  @Lazy
+  public RequestMappingInfoFilterProvider requestMappingInfoFilterProvider() {
+    return new RequestMappingInfoFilterProvider();
+  }
+
+  @Bean
   @ConditionalOnMissingBean
-  public RestEntityControllerRegistry restEntityControllerRegistry(
-      EntityManagerFactory entityManagerFactory, EntityPathBaseFinder finder) {
-    return new RestEntityControllerRegistry(entityManagerFactory, finder);
+  public RestEntityControllerRegistry restEntityControllerRegistry(EntityPathBaseFinder finder) {
+    return new RestEntityControllerRegistry(finder);
   }
 
   @Bean
@@ -46,32 +56,22 @@ public class RestEntityConfiguration implements BeanFactoryAware {
   @ConditionalOnMissingBean
   @Lazy
   public RequestControllerMappingResolver resolver(
-      RestControllerBeanFactory restControllerBeanFactory,
-      RequestMappingHandlerMapping mappingHandlerMapping) {
-    return new RequestControllerMappingResolver(restControllerBeanFactory, mappingHandlerMapping);
+      RequestMappingHandlerMapping mappingHandlerMapping,
+      List<RequestMappingInfoProvider> providers) {
+    return new RequestControllerMappingResolver(mappingHandlerMapping, providers);
   }
 
   @Bean
-  @ConditionalOnMissingBean
   @Lazy
+  @ConditionalOnMissingBean
+  public ByteBuddyRestControllerFactory byteBuddyRestControllerFactory() {
+    return new ByteBuddyRestControllerFactory();
+  }
+
+  @Bean
   @ConditionalOnBean(JPQLQueryFactory.class)
-  public CrudInterceptor crudInterceptor(JPQLQueryFactory jpqlQueryFactory) {
-    return new CrudInterceptor();
-  }
-
-  @ConditionalOnMissingBean
-  @Bean
-  @Lazy
-  @ConditionalOnBean(CrudInterceptor.class)
-  public InvokerHandlerFactory invokerHandlerFactory(CrudInterceptor crudInterceptor) {
-    return new DefaultHandlerFactory(crudInterceptor);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  @Lazy
-  public RestControllerBeanFactory restControllerBeanFactory(InvokerHandlerFactory factory) {
-    return new ByteBuddyRestControllerBeanFactory(factory);
+  public DefaultDelegator crudInterceptor(JPQLQueryFactory jpqlQueryFactory) {
+    return new DefaultDelegator();
   }
 
   @Override
